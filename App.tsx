@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Home } from './components/Home';
 import { Player } from './components/Player';
 import { BookOpen, Languages } from 'lucide-react';
@@ -70,14 +70,14 @@ const Layout: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter basename="/magic-english-buddy">
+    <HashRouter>
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/player" element={<Player />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 
