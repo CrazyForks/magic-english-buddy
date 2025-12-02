@@ -30,7 +30,8 @@ const resources = {
         cat_daily: "Daily Life",
         cat_science: "Science",
         cat_fun: "Fun Facts",
-        preset_select_title: "Choose a story"
+        preset_select_title: "Choose a story",
+        english_only: "English only"
       },
       player: {
         debug_hide: "Hide Debug",
@@ -82,7 +83,8 @@ const resources = {
         cat_daily: "日常生活",
         cat_science: "趣味科学",
         cat_fun: "冷知识",
-        preset_select_title: "选择一篇文章"
+        preset_select_title: "选择一篇文章",
+        english_only: "仅保留英文"
       },
       player: {
         debug_hide: "隐藏调试",

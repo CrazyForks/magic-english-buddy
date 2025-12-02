@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, PlayCircle, PenTool, Eraser, Library, Book } from 'lucide-react';
+import { Sparkles, PlayCircle, PenTool, Eraser, Library, Book, Check } from 'lucide-react';
 import { generateStory } from '../services/geminiService';
 import { useTranslation } from 'react-i18next';
 import { PRESETS, PresetStory } from '../data/presets';
@@ -21,7 +21,19 @@ export const Home: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [mode, setMode] = useState<'write' | 'generate' | 'preset'>('write');
   const [activeCategory, setActiveCategory] = useState<PresetStory['category'] | 'all'>('all');
+  const [englishOnly, setEnglishOnly] = useState(true);
   const { t } = useTranslation();
+
+  // 过滤非英文字符，保留英文字母、数字和常见标点
+  const filterEnglishOnly = (input: string): string => {
+    // 保留英文字母、数字、常见标点符号、空格和换行
+    // 匹配英文单词、数字、标点和空白字符
+    return input
+      .replace(/[^\w\s.,!?;:'"()\-\n\r]/g, ' ') // 替换非英文字符为空格
+      .replace(/\s+/g, ' ') // 合并多个空格
+      .replace(/\n\s*\n/g, '\n') // 清理多余的换行
+      .trim();
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim()) return;
@@ -44,7 +56,8 @@ export const Home: React.FC = () => {
 
   const handleStartPractice = () => {
     if (!text.trim()) return;
-    navigate('/player', { state: { text } });
+    const finalText = englishOnly ? filterEnglishOnly(text) : text;
+    navigate('/player', { state: { text: finalText } });
   };
 
   const filteredPresets = activeCategory === 'all' 
@@ -116,6 +129,22 @@ export const Home: React.FC = () => {
                  >
                    <Eraser size={14} className="md:w-4 md:h-4" /> {t('home.clear')}
                  </button>
+                 
+                 <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer select-none group">
+                   <div 
+                     onClick={() => setEnglishOnly(!englishOnly)}
+                     className={clsx(
+                       "w-4 h-4 md:w-5 md:h-5 rounded border-2 flex items-center justify-center transition-all",
+                       englishOnly 
+                         ? "bg-brand border-brand text-white" 
+                         : "border-slate-300 bg-white group-hover:border-brand/50"
+                     )}
+                   >
+                     {englishOnly && <Check size={12} className="md:w-3.5 md:h-3.5" strokeWidth={3} />}
+                   </div>
+                   <span className="text-slate-500 text-xs md:text-sm font-medium">{t('home.english_only')}</span>
+                 </label>
+
                  <span className="text-slate-300 text-xs md:text-sm font-bold">{text.length} {t('home.chars')}</span>
               </div>
             </div>
