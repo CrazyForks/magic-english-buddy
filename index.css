@@ -67,11 +67,6 @@ body {
   textarea {
     min-height: 44px;
   }
-  
-  /* Smoother animations on mobile */
-  * {
-    -webkit-transform: translateZ(0);
-  }
 }
 
 /* Safe area insets for notched devices */
@@ -96,12 +91,10 @@ body {
   -webkit-user-select: text;
   user-select: text;
   -webkit-touch-callout: none;
-  touch-callout: none;
 }
 
 .text-display-area * {
   -webkit-touch-callout: none;
-  touch-callout: none;
 }
 
 /* Animation keyframes */
@@ -200,6 +193,31 @@ input[type="range"]::-moz-range-thumb {
   .landscape-compact {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
+  }
+  
+  /* Reduce min-height in landscape for text display */
+  .landscape\:min-h-\[35vh\] {
+    min-height: 35vh;
+  }
+}
+
+/* GPU acceleration for animated elements only */
+.animate-fade-in,
+.animate-slide-up,
+.animate-bounce-soft {
+  will-change: opacity, transform;
+}
+
+/* Remove will-change after animation completes */
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Ensure smooth transitions for interactive elements */
+@media (prefers-reduced-motion: no-preference) {
+  .transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 

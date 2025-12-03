@@ -63,8 +63,8 @@ export const Controls: React.FC<ControlsProps> = ({
   return (
     <div 
       ref={controlsRef}
-      className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-[100]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed bottom-0 left-0 right-0 bg-white/[0.98] backdrop-blur-xl border-t border-slate-200 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-[100] supports-[backdrop-filter]:bg-white/95"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0px)' }}
     >
       <div className="max-w-4xl mx-auto px-3 py-3 md:px-4 md:py-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
@@ -151,8 +151,10 @@ export const Controls: React.FC<ControlsProps> = ({
 
           {/* Settings Panel - Always visible on desktop, toggleable on mobile */}
           <div className={clsx(
-            "w-full md:w-auto md:flex flex-col md:flex-row gap-2.5 md:gap-3 items-center bg-slate-50/80 rounded-xl border border-slate-100 p-2.5 md:p-3 transition-all",
-            showMobileSettings ? "flex" : "hidden"
+            "w-full md:w-auto md:flex flex-col md:flex-row gap-2.5 md:gap-3 items-center bg-slate-50/80 rounded-xl border border-slate-100 p-2.5 md:p-3 transition-all duration-300 ease-out origin-top",
+            showMobileSettings 
+              ? "flex opacity-100 max-h-[500px] scale-y-100" 
+              : "hidden md:flex md:opacity-100 md:max-h-none md:scale-y-100 opacity-0 max-h-0 scale-y-95"
           )}>
             
             {/* Mobile Header */}

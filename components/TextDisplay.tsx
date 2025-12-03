@@ -21,7 +21,7 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeWordRef = useRef<HTMLSpanElement>(null);
-  const [selectionPopup, setSelectionPopup] = useState<{x: number, y: number, text: string} | null>(null);
+  const [selectionPopup, setSelectionPopup] = useState<{x: number, y: number, text: string, showBelow: boolean} | null>(null);
   const { t } = useTranslation();
 
   // Parse text into tokens
@@ -85,12 +85,14 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
         
         // Ensure popup doesn't go above viewport
         let y = rect.top - 10;
+        let showBelow = false;
         if (y < 60) {
           // Show below selection if too close to top
           y = rect.bottom + 10;
+          showBelow = true;
         }
         
-        setSelectionPopup({ x, y, text });
+        setSelectionPopup({ x, y, text, showBelow });
       }
     };
 
@@ -120,7 +122,7 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
         <div 
             ref={containerRef}
             onContextMenu={(e) => e.preventDefault()}
-            className="bg-white rounded-2xl md:rounded-[2rem] shadow-xl p-4 md:p-12 min-h-[30vh] md:min-h-[40vh] leading-[2.2] md:leading-[2.8] text-lg md:text-3xl font-sans text-slate-700 relative border-b-4 md:border-b-8 border-brand-light text-display-area"
+            className="bg-white rounded-2xl md:rounded-[2rem] shadow-xl p-4 md:p-12 min-h-[25vh] md:min-h-[40vh] landscape:min-h-[35vh] leading-[2.2] md:leading-[2.8] text-lg md:text-3xl font-sans text-slate-700 relative border-b-4 md:border-b-8 border-brand-light text-display-area"
         >
         <div className="flex flex-wrap gap-x-2 gap-y-2 md:gap-x-[14px] md:gap-y-[12px]">
             {tokens.map((token, index) => {
@@ -134,10 +136,10 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
                     onWordClick(token.cleanText);
                 }}
                 className={clsx(
-                    "cursor-pointer rounded-md md:rounded-lg px-2 py-1 md:px-3 md:py-1.5 transition-all duration-200 border-2 select-text relative will-change-transform",
+                    "cursor-pointer rounded-md md:rounded-lg px-2 py-1 md:px-3 md:py-1.5 transition-all duration-200 border-2 select-text relative",
                     isActive 
                     ? "bg-blue-600 text-white border-blue-600 scale-105 md:scale-110 -translate-y-0.5 md:-translate-y-1 font-bold shadow-lg md:shadow-xl shadow-blue-500/40 z-10" 
-                    : "border-transparent text-slate-700 hover:bg-sky-50 hover:text-sky-600 hover:scale-105 active:bg-sky-100"
+                    : "border-transparent text-slate-700 hover:bg-sky-50 hover:text-sky-600 hover:scale-105 active:bg-sky-100 active:scale-95"
                 )}
                 >
                 {token.text}
@@ -150,21 +152,34 @@ export const TextDisplay: React.FC<TextDisplayProps> = ({
         {/* Floating Play Button for Selection */}
         {selectionPopup && (
             <div 
-                className="fixed z-50 transform -translate-x-1/2 -translate-y-full animate-in zoom-in-50 duration-200"
+                className={clsx(
+                    "fixed z-[102] transform -translate-x-1/2 animate-fade-in",
+                    selectionPopup.showBelow ? "" : "-translate-y-full"
+                )}
                 style={{ left: selectionPopup.x, top: selectionPopup.y }}
             >
+                {/* Arrow pointing up when popup is below selection */}
+                {selectionPopup.showBelow && (
+                    <div className="w-3 h-3 md:w-4 md:h-4 bg-slate-900 rotate-45 mx-auto mb-[-6px] md:mb-[-8px]"></div>
+                )}
                 <button
                     onClick={() => {
                         onTextSelected(selectionPopup.text);
                         setSelectionPopup(null);
                         window.getSelection()?.removeAllRanges();
                     }}
-                    className="flex items-center gap-1.5 md:gap-2 bg-slate-900 text-white px-3.5 py-2 md:px-5 md:py-2.5 rounded-full shadow-xl hover:bg-black transition-transform hover:scale-105 font-bold text-xs md:text-sm mb-2 md:mb-3 whitespace-nowrap border-2 border-white/20"
+                    className={clsx(
+                        "flex items-center gap-1.5 md:gap-2 bg-slate-900 text-white px-3.5 py-2 md:px-5 md:py-2.5 rounded-full shadow-xl hover:bg-black transition-transform hover:scale-105 font-bold text-xs md:text-sm whitespace-nowrap border-2 border-white/20",
+                        selectionPopup.showBelow ? "mt-2 md:mt-3" : "mb-2 md:mb-3"
+                    )}
                 >
                     <Volume2 size={16} className="md:w-[18px] md:h-[18px]" />
                     {t('text_display.read_selection')}
                 </button>
-                <div className="w-3 h-3 md:w-4 md:h-4 bg-slate-900 rotate-45 mx-auto -mt-4 md:-mt-5"></div>
+                {/* Arrow pointing down when popup is above selection */}
+                {!selectionPopup.showBelow && (
+                    <div className="w-3 h-3 md:w-4 md:h-4 bg-slate-900 rotate-45 mx-auto -mt-4 md:-mt-5"></div>
+                )}
             </div>
         )}
     </>

@@ -12,7 +12,7 @@ interface LocationState {
 }
 
 const DebugOverlay: React.FC<{ info: DebugInfo }> = ({ info }) => (
-  <div className="fixed bottom-40 md:bottom-32 left-2 md:left-4 p-3 md:p-4 bg-black/80 text-green-400 font-mono text-[10px] md:text-xs rounded-lg shadow-xl z-[101] backdrop-blur-md max-w-[280px] md:max-w-xs pointer-events-none opacity-80">
+  <div className="fixed bottom-40 md:bottom-32 left-2 md:left-4 p-3 md:p-4 bg-black/90 text-green-400 font-mono text-[10px] md:text-xs rounded-lg shadow-xl z-[103] max-w-[280px] md:max-w-xs pointer-events-none opacity-90">
     <div className="flex items-center gap-2 mb-2 border-b border-green-400/30 pb-1">
       <Bug size={12} className="md:w-3.5 md:h-3.5" /> <span>TTS Debugger</span>
     </div>
@@ -54,7 +54,7 @@ export const Player: React.FC = () => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
   const [showDebug, setShowDebug] = useState(false);
-  const [controlsHeight, setControlsHeight] = useState(80); // Default height
+  const [controlsHeight, setControlsHeight] = useState(100); // Default height (conservative estimate)
   const { t } = useTranslation();
 
   // Redirect to home if no text
@@ -159,13 +159,13 @@ export const Player: React.FC = () => {
         to ensure fixed Controls never obscure the text content. 
       */}
       <div
-        className="animate-in fade-in zoom-in-95 duration-300 relative"
+        className="animate-fade-in relative"
         style={{ paddingBottom: `${controlsHeight + 24}px` }}
       >
 
         {/* TTS Unavailable Warning */}
         {ttsUnavailable && (
-          <div className="mb-4 p-3 md:p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3">
+          <div className="mb-4 p-3 md:p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-3 animate-fade-in">
             <VolumeX size={20} className="text-amber-500 flex-shrink-0" />
             <p className="text-amber-700 text-sm md:text-base">
               {t('player.tts_unavailable', '您的浏览器不支持语音合成功能，朗读功能将不可用。')}
