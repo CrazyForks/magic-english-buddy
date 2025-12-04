@@ -34,6 +34,9 @@ const resources = {
         preset_select_title: "Choose a story",
         english_only: "English only",
         ocr_scan: "Scan",
+        share: "Share",
+        share_copied: "Link copied!",
+        share_failed: "Share failed",
       },
       ocr: {
         title: "Scan Text from Image",
@@ -111,6 +114,9 @@ const resources = {
         preset_select_title: "选择一篇文章",
         english_only: "仅保留英文",
         ocr_scan: "扫描",
+        share: "分享",
+        share_copied: "链接已复制!",
+        share_failed: "分享失败",
       },
       ocr: {
         title: "从图片中提取文字",

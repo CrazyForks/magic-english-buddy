@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Square, Settings, Type, ChevronDown } from 'lucide-react';
+import { Play, Pause, Square, Settings, Type, ChevronDown, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
@@ -9,6 +9,7 @@ interface ControlsProps {
   speed: number;
   voices: SpeechSynthesisVoice[];
   selectedVoiceName: string;
+  text?: string;
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -24,6 +25,7 @@ export const Controls: React.FC<ControlsProps> = ({
   speed,
   voices,
   selectedVoiceName,
+  text,
   onPlay,
   onPause,
   onStop,
@@ -33,6 +35,7 @@ export const Controls: React.FC<ControlsProps> = ({
   disabled = false,
 }) => {
   const [showMobileSettings, setShowMobileSettings] = useState(false);
+  const [shareToast, setShareToast] = useState<string | null>(null);
   const { t } = useTranslation();
   const controlsRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +61,42 @@ export const Controls: React.FC<ControlsProps> = ({
 
   const toggleSettings = () => {
     setShowMobileSettings(prev => !prev);
+  };
+
+  // 生成分享链接并分享/复制
+  const handleShare = async () => {
+    if (!text?.trim()) return;
+
+    const encodedText = encodeURIComponent(text);
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}#/?text=${encodedText}`;
+
+    const shareData = {
+      title: t('app.title'),
+      text: text.slice(0, 100) + (text.length > 100 ? '...' : ''),
+      url: shareUrl,
+    };
+
+    // 优先使用 Web Share API（移动端）
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) {
+        // 用户取消分享或分享失败，回退到复制链接
+        if ((e as Error).name === 'AbortError') return;
+      }
+    }
+
+    // 回退到复制链接
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareToast(t('home.share_copied'));
+      setTimeout(() => setShareToast(null), 2000);
+    } catch (e) {
+      setShareToast(t('home.share_failed'));
+      setTimeout(() => setShareToast(null), 2000);
+    }
   };
 
   return (
@@ -135,18 +174,32 @@ export const Controls: React.FC<ControlsProps> = ({
               )}
             </div>
 
-            {/* Mobile Settings Toggle */}
-            <button 
-              onClick={toggleSettings}
-              className={clsx(
-                "md:hidden ml-auto p-2.5 rounded-lg transition-all",
-                showMobileSettings 
-                  ? "bg-brand/10 text-brand" 
-                  : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+            {/* Share & Mobile Settings Toggle */}
+            <div className="flex items-center gap-2 ml-auto md:ml-6">
+              {/* Share Button */}
+              {text && (
+                <button 
+                  onClick={handleShare}
+                  className="p-2.5 rounded-lg bg-slate-50 text-slate-400 hover:bg-brand/10 hover:text-brand transition-all"
+                  aria-label={t('home.share')}
+                >
+                  <Share2 size={18} />
+                </button>
               )}
-            >
-              <Settings size={18} />
-            </button>
+              
+              {/* Mobile Settings Toggle */}
+              <button 
+                onClick={toggleSettings}
+                className={clsx(
+                  "md:hidden p-2.5 rounded-lg transition-all",
+                  showMobileSettings 
+                    ? "bg-brand/10 text-brand" 
+                    : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                )}
+              >
+                <Settings size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Settings Panel - Always visible on desktop, toggleable on mobile */}
@@ -223,6 +276,15 @@ export const Controls: React.FC<ControlsProps> = ({
 
         </div>
       </div>
+
+      {/* Share Toast */}
+      {shareToast && (
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[101] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+            {shareToast}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

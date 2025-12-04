@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Sparkles, PlayCircle, PenTool, Eraser, Library, Book, Check, ScanLine } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Sparkles, PlayCircle, PenTool, Eraser, Library, Book, Check, ScanLine, Share2 } from 'lucide-react';
 import { generateStory } from '../services/geminiService';
 import { useTranslation } from 'react-i18next';
 import { PRESETS, PresetStory } from '../data/presets';
@@ -11,6 +11,7 @@ const STORAGE_KEY = 'magic-english-buddy-text';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [text, setText] = useState('');
   const [topic, setTopic] = useState('');
@@ -20,10 +21,27 @@ export const Home: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<PresetStory['category'] | 'all'>('all');
   const [englishOnly, setEnglishOnly] = useState(true);
   const [showCamera, setShowCamera] = useState(false);
+  const [shareToast, setShareToast] = useState<string | null>(null);
   const { t } = useTranslation();
 
-  // 从 sessionStorage 恢复文本
+  // 从 URL query 参数或 sessionStorage 恢复文本
   useEffect(() => {
+    // 优先从 URL 参数读取（分享链接）
+    const searchParams = new URLSearchParams(location.search);
+    const sharedText = searchParams.get('text');
+    if (sharedText) {
+      try {
+        const decodedText = decodeURIComponent(sharedText);
+        setText(decodedText);
+        // 清除 URL 中的参数，避免刷新时重复填充
+        window.history.replaceState(null, '', window.location.pathname + window.location.hash.split('?')[0]);
+        return;
+      } catch (e) {
+        // 解码失败时忽略
+      }
+    }
+
+    // 其次从 sessionStorage 恢复
     try {
       const savedText = sessionStorage.getItem(STORAGE_KEY);
       if (savedText) {
@@ -32,7 +50,7 @@ export const Home: React.FC = () => {
     } catch (e) {
       // sessionStorage 不可用时忽略
     }
-  }, []);
+  }, [location.search]);
 
   // 过滤非英文字符，保留英文字母、数字和常见标点
   const filterEnglishOnly = (input: string): string => {
@@ -43,6 +61,43 @@ export const Home: React.FC = () => {
       .replace(/\s+/g, ' ') // 合并多个空格
       .replace(/\n\s*\n/g, '\n') // 清理多余的换行
       .trim();
+  };
+
+  // 生成分享链接并分享/复制
+  const handleShare = async () => {
+    if (!text.trim()) return;
+
+    const finalText = englishOnly ? filterEnglishOnly(text) : text;
+    const encodedText = encodeURIComponent(finalText);
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}#/?text=${encodedText}`;
+
+    const shareData = {
+      title: t('app.title'),
+      text: finalText.slice(0, 100) + (finalText.length > 100 ? '...' : ''),
+      url: shareUrl,
+    };
+
+    // 优先使用 Web Share API（移动端）
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) {
+        // 用户取消分享或分享失败，回退到复制链接
+        if ((e as Error).name === 'AbortError') return;
+      }
+    }
+
+    // 回退到复制链接
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareToast(t('home.share_copied'));
+      setTimeout(() => setShareToast(null), 2000);
+    } catch (e) {
+      setShareToast(t('home.share_failed'));
+      setTimeout(() => setShareToast(null), 2000);
+    }
   };
 
   const handleGenerate = async () => {
@@ -78,14 +133,14 @@ export const Home: React.FC = () => {
   const handleStartPractice = () => {
     if (!text.trim()) return;
     const finalText = englishOnly ? filterEnglishOnly(text) : text;
-    
+
     // 保存到 sessionStorage（兼容性更好）
     try {
       sessionStorage.setItem(STORAGE_KEY, finalText);
     } catch (e) {
       // sessionStorage 不可用时忽略
     }
-    
+
     navigate('/player');
   };
 
@@ -162,12 +217,21 @@ export const Home: React.FC = () => {
                 </button>
               </div>
               <div className="flex justify-between items-center">
-                <button
-                  onClick={() => setText('')}
-                  className="text-slate-400 hover:text-red-400 font-bold text-xs md:text-sm flex items-center gap-1 px-2.5 py-1.5 md:px-3 md:py-2 rounded-lg hover:bg-red-50 transition-colors"
-                >
-                  <Eraser size={14} className="md:w-4 md:h-4" /> {t('home.clear')}
-                </button>
+                <div className="flex items-center gap-1 md:gap-2">
+                  <button
+                    onClick={() => setText('')}
+                    className="text-slate-400 hover:text-red-400 font-bold text-xs md:text-sm flex items-center gap-1 px-2.5 py-1.5 md:px-3 md:py-2 rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <Eraser size={14} className="md:w-4 md:h-4" /> {t('home.clear')}
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    disabled={!text.trim()}
+                    className="text-slate-400 hover:text-brand font-bold text-xs md:text-sm flex items-center gap-1 px-2.5 py-1.5 md:px-3 md:py-2 rounded-lg hover:bg-brand/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Share2 size={14} className="md:w-4 md:h-4" /> {t('home.share')}
+                  </button>
+                </div>
 
                 <label className="flex items-center gap-1.5 md:gap-2 cursor-pointer select-none group">
                   <div
@@ -313,6 +377,15 @@ export const Home: React.FC = () => {
           onTextExtracted={handleOcrTextExtracted}
           onClose={() => setShowCamera(false)}
         />
+      )}
+
+      {/* Share Toast */}
+      {shareToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-slate-800 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+            {shareToast}
+          </div>
+        </div>
       )}
 
     </div>

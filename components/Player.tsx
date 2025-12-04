@@ -243,6 +243,7 @@ export const Player: React.FC = () => {
         speed={speed}
         voices={voices}
         selectedVoiceName={selectedVoiceName}
+        text={text}
         onPlay={play}
         onPause={pause}
         onStop={stop}
