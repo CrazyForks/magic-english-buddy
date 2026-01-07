@@ -15,22 +15,22 @@ interface TTSEvent {
 }
 
 interface TTSOptions {
-  rate?: number;      // 语速 0.1-10，默认 1
-  pitch?: number;     // 音调 0-2，默认 1
-  volume?: number;    // 音量 0-1，默认 1
-  lang?: string;      // 语言，默认 'en-US'
-  voice?: string;     // 指定语音名称
+  rate?: number; // 语速 0.1-10，默认 1
+  pitch?: number; // 音调 0-2，默认 1
+  volume?: number; // 音量 0-1，默认 1
+  lang?: string; // 语言，默认 'en-US'
+  voice?: string; // 指定语音名称
 }
 
 interface WordBoundary {
   word: string;
-  start: number;  // 字符起始位置
-  end: number;    // 字符结束位置
-  index: number;  // 单词索引
+  start: number; // 字符起始位置
+  end: number; // 字符结束位置
+  index: number; // 单词索引
 }
 
 class TTSService {
-  private synthesis: SpeechSynthesis;
+  private synthesis: SpeechSynthesis | null = null;
   private utterance: SpeechSynthesisUtterance | null = null;
   private voices: SpeechSynthesisVoice[] = [];
   private isPlaying = false;
@@ -46,12 +46,15 @@ class TTSService {
   };
 
   constructor() {
-    this.synthesis = window.speechSynthesis;
-    this.loadVoices();
-    
-    // 某些浏览器需要等待 voiceschanged 事件
-    if (this.synthesis.onvoiceschanged !== undefined) {
-      this.synthesis.onvoiceschanged = () => this.loadVoices();
+    // 安全检查：某些浏览器/环境可能不支持 speechSynthesis
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      this.synthesis = window.speechSynthesis;
+      this.loadVoices();
+
+      // 某些浏览器需要等待 voiceschanged 事件
+      if (this.synthesis.onvoiceschanged !== undefined) {
+        this.synthesis.onvoiceschanged = () => this.loadVoices();
+      }
     }
   }
 
@@ -59,6 +62,7 @@ class TTSService {
    * 加载可用语音
    */
   private loadVoices(): void {
+    if (!this.synthesis) return;
     this.voices = this.synthesis.getVoices();
   }
 
@@ -66,9 +70,7 @@ class TTSService {
    * 获取可用的英语语音列表
    */
   getEnglishVoices(): SpeechSynthesisVoice[] {
-    return this.voices.filter(voice => 
-      voice.lang.startsWith('en') || voice.lang.startsWith('EN')
-    );
+    return this.voices.filter(voice => voice.lang.startsWith('en') || voice.lang.startsWith('EN'));
   }
 
   /**
@@ -76,14 +78,14 @@ class TTSService {
    */
   getRecommendedVoice(): SpeechSynthesisVoice | null {
     const englishVoices = this.getEnglishVoices();
-    
+
     // 优先选择：1. 本地高质量语音 2. 美式英语 3. 任意英语
     const localVoice = englishVoices.find(v => v.localService && v.lang === 'en-US');
     if (localVoice) return localVoice;
-    
+
     const usVoice = englishVoices.find(v => v.lang === 'en-US');
     if (usVoice) return usVoice;
-    
+
     return englishVoices[0] || null;
   }
 
@@ -143,7 +145,7 @@ class TTSService {
    */
   setRate(rate: number): void {
     this.options.rate = Math.max(0.5, Math.min(2, rate));
-    
+
     // 如果正在播放，需要重新开始
     if (this.isPlaying && this.utterance) {
       const currentText = this.utterance.text;
@@ -172,6 +174,12 @@ class TTSService {
    */
   speak(text: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // 检查 TTS 是否可用
+      if (!this.synthesis) {
+        reject(new Error('TTS not supported'));
+        return;
+      }
+
       // 停止之前的播放
       this.stop();
 
@@ -181,7 +189,7 @@ class TTSService {
 
       // 创建新的 utterance
       this.utterance = new SpeechSynthesisUtterance(text);
-      
+
       // 应用选项
       this.utterance.rate = this.options.rate || 1;
       this.utterance.pitch = this.options.pitch || 1;
@@ -208,7 +216,7 @@ class TTSService {
         resolve();
       };
 
-      this.utterance.onerror = (event) => {
+      this.utterance.onerror = event => {
         this.isPlaying = false;
         this.isPaused = false;
         const errorMsg = event.error || 'Unknown TTS error';
@@ -217,12 +225,12 @@ class TTSService {
       };
 
       // 单词边界事件（不是所有浏览器都支持）
-      this.utterance.onboundary = (event) => {
+      this.utterance.onboundary = event => {
         if (event.name === 'word') {
           const wordIndex = this.findWordIndexByCharIndex(event.charIndex);
           this.currentWordIndex = wordIndex;
           const boundary = this.wordBoundaries[wordIndex];
-          
+
           this.emit({
             type: 'word',
             wordIndex,
@@ -242,6 +250,12 @@ class TTSService {
    */
   speakWord(word: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // 检查 TTS 是否可用
+      if (!this.synthesis) {
+        reject(new Error('TTS not supported'));
+        return;
+      }
+
       // 取消之前的播放但不重置状态
       this.synthesis.cancel();
 
@@ -267,6 +281,7 @@ class TTSService {
    * 暂停播放
    */
   pause(): void {
+    if (!this.synthesis) return;
     if (this.isPlaying && !this.isPaused) {
       this.synthesis.pause();
       this.isPaused = true;
@@ -278,6 +293,7 @@ class TTSService {
    * 恢复播放
    */
   resume(): void {
+    if (!this.synthesis) return;
     if (this.isPaused) {
       this.synthesis.resume();
       this.isPaused = false;
@@ -289,6 +305,7 @@ class TTSService {
    * 停止播放
    */
   stop(): void {
+    if (!this.synthesis) return;
     this.synthesis.cancel();
     this.isPlaying = false;
     this.isPaused = false;
@@ -329,4 +346,3 @@ class TTSService {
 // 单例导出
 export const ttsService = new TTSService();
 export default ttsService;
-

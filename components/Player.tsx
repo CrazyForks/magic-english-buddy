@@ -43,7 +43,7 @@ const DebugOverlay: React.FC<{ info: DebugInfo }> = ({ info }) => (
 
 export const Player: React.FC = () => {
   const navigate = useNavigate();
-  
+
   // 从 sessionStorage 读取文本
   const [text, setText] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -86,8 +86,16 @@ export const Player: React.FC = () => {
 
   // Initialize Voices
   useEffect(() => {
+    // 安全检查：确保 speechSynthesis 可用
+    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !window.speechSynthesis) {
+      return;
+    }
+
     const loadVoices = () => {
-      let avail = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+      // 再次检查以防止运行时错误
+      if (!window.speechSynthesis) return;
+
+      const avail = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
 
       // Sort voices: Local Service voices first!
       // This is critical because remote voices often don't support onboundary events.
